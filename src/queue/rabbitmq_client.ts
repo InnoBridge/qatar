@@ -61,13 +61,17 @@ class RabbitMQClient implements QueueClient {
                     this.MESSAGE_EXCHANGE, 
                     queueName
                 );
-                await this.publishingChannel.publish(
+                const published = await this.publishingChannel.publish(
                     this.MESSAGE_EXCHANGE,
                     queueName,
                     messageBuffer,
                     { persistent: true }
                 );
-                console.log(`Message sent to queue ${queueName}:`, message);
+                if (!published) {
+	                console.warn(`Message could not be sent to queue ${queueName} due to buffer overflow.`);
+	            } else {
+	                 console.log(`Message sent to queue ${queueName}:`, message);
+	            }            
             }
         } catch (error) {
             console.error('Failed to publish message:', error);
