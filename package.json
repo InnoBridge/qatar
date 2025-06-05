@@ -1,8 +1,16 @@
 {
   "name": "@innobridge/qatar",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A TypeScript library for Queue management, qatar is Sanskrit for queue ",
   "author": "yilengyao <innobridgetechnology@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InnoBridge/qatar.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
   "license": "InnoBridge",
   "type": "module",
   "main": "dist/index.cjs",
@@ -36,6 +44,7 @@
     "test:integration": "npx tsx src/__tests__/integration/${npm_config_file:-*.test.ts}"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
     "@types/node": "^22.15.29",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.6",
@@ -44,5 +53,9 @@
   },
   "engines": {
     "node": "^20.0.0 || >=22.0.0"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.8",
+    "dotenv": "^16.5.0"
   }
 }
