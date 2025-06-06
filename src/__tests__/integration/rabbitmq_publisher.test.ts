@@ -2,11 +2,25 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 import { RabbitMQClient } from '@/queue/rabbitmq_client';
 import { QueueClient } from '@/queue/queue_client';
-import { Message } from '@/models/message';
+import { BaseEvent } from '@/models/event';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL;
+
+interface Message {
+    chatId: string;
+    messageId: string;
+    userIds: string[];
+    senderId: string;
+    content: string;
+    createdAt: number;
+};
+
+interface MessageEvent extends BaseEvent {
+    type: 'message';
+    message: Message;
+}
 
 const initializationClient = async (url: string): Promise<QueueClient> => {
     const client = new RabbitMQClient();
@@ -33,8 +47,14 @@ const publishMessageTest = async (client: QueueClient): Promise<void> => {
             createdAt: new Date().getTime(),
         };
 
+    const messageEvent: MessageEvent = {
+        type: 'message',
+        userIds: message.userIds,
+        message: message
+    };
+
     try {
-        await client.publishMessage(message);
+        await client.publishEvent(messageEvent);
         console.log('Message published successfully');
     } catch (error) {
         console.error('Failed to publish message:', error);

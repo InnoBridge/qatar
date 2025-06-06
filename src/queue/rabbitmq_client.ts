@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 import { QueueClient } from '@/queue/queue_client';
-import { Message } from '@/models/message';
+import { BaseEvent } from '@/models/event';
 
 class RabbitMQClient implements QueueClient {
     private connection: amqp.ChannelModel | null = null;
@@ -46,14 +46,14 @@ class RabbitMQClient implements QueueClient {
         }
     }
 
-    async publishMessage(message: Message): Promise<void> {
+    async publishEvent(event: BaseEvent): Promise<void> {
         if (!this.publishingChannel) {
             throw new Error('RabbitMQ publishing channel not initialized. Call initializeQueue first.');
         }
 
         try {
-            const messageBuffer = Buffer.from(JSON.stringify(message));
-            for (const userId of message.userIds) {
+            const messageBuffer = Buffer.from(JSON.stringify(event));
+            for (const userId of event.userIds) {
                 const queueName = `${this.USER_QUEUE_PREFIX}${userId}`;
                 await this.publishingChannel.assertQueue(queueName, { durable: true });
                 await this.publishingChannel.bindQueue(
@@ -70,7 +70,7 @@ class RabbitMQClient implements QueueClient {
                 if (!published) {
 	                console.warn(`Message could not be sent to queue ${queueName} due to buffer overflow.`);
 	            } else {
-	                 console.log(`Message sent to queue ${queueName}:`, message);
+	                 console.log(`Message sent to queue ${queueName}:`, event);
 	            }            
             }
         } catch (error) {
@@ -79,7 +79,7 @@ class RabbitMQClient implements QueueClient {
         }
     }
 
-    async subscribeUser(userId: string, onMessage: (msg: Message) => void): Promise<void> {
+    async subscribeUser(userId: string, eventHandler: (event: BaseEvent) => void): Promise<void> {
         if (!this.connection) {
             throw new Error('RabbitMQ connection not initialized. Call initializeQueue first.');
         }
@@ -93,15 +93,15 @@ class RabbitMQClient implements QueueClient {
             const channel = this.userMessageChannels.get(userId)!;
             const queueName = `${this.USER_QUEUE_PREFIX}${userId}`;
             await channel.assertQueue(queueName, { durable: true });
-            const consumerInfo = await channel.consume(queueName, (msg) => {
+            await channel.consume(queueName, (event) => {
                 try {
-                    const messageContent = JSON.parse(msg!.content.toString());
-                    onMessage(messageContent);
-                    channel.ack(msg!);
+                    const messageContent = JSON.parse(event!.content.toString());
+                    eventHandler(messageContent);
+                    channel.ack(event!);
                     console.log(`✅ Message acknowledged for ${queueName}`);
                 } catch (error) {
                     console.error(`❌ Error processing message:`, error);
-                    channel.nack(msg!, false, false);
+                    channel.nack(event!, false, false);
                 }
             }, { noAck: false });
         

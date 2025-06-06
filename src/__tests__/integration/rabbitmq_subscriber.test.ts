@@ -2,7 +2,6 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 import { RabbitMQClient } from '@/queue/rabbitmq_client';
 import { QueueClient } from '@/queue/queue_client';
-import { Message } from '@/models/message';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
