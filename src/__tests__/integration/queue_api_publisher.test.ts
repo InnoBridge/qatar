@@ -4,11 +4,25 @@ import {
     initializeQueue,
     shutdown
 } from '@/api/queue';
-import { publishMessage } from '@/api/messages';
-import { Message } from '@/models/message';
-import { MessageEvent } from '@/models/event';
+import { publishEvent } from '@/api/queue';
+import { BaseEvent } from '@/models/event';
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL;
+
+interface Message {
+    chatId: string;
+    messageId: string;
+    userIds: string[];
+    senderId: string;
+    content: string;
+    createdAt: number;
+};
+
+interface MessageEvent extends BaseEvent {
+    type: 'message';
+    userIds: string[];
+    message: Message;
+}
 
 const initializeQueueTest = async (url: string) => {
     console.log(`Initializing RabbitMQ client with URL: ${url}`);
@@ -68,9 +82,9 @@ const publishMessageTest = async () => {
     };
     
     try {
-        await publishMessage(messageEvent1);
-        await publishMessage(messageEvent2);
-        await publishMessage(messageEvent3);
+        await publishEvent(messageEvent1);
+        await publishEvent(messageEvent2);
+        await publishEvent(messageEvent3);
         console.log('Message published successfully');
     } catch (error) {
         console.error('Failed to publish message:', error);

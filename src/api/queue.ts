@@ -21,6 +21,21 @@ const initializeQueue = async (url: string): Promise<QueueClient> => {
     }
 };
 
+const publishEvent = async (event: BaseEvent): Promise<void> => {
+    if (!client) {
+        throw new Error('Queue client not initialized. Call initializeQueue first.');
+    }
+    
+    try {
+        await client.publishEvent(event);
+        console.log('Message published successfully');
+    } catch (error) {
+        console.error('Failed to publish message:', error);
+        throw error;
+    }
+};
+
+
 const subscribeUser = async (userId: string, callback: (event: BaseEvent) => void): Promise<void> => {
     if (!client) {
         throw new Error('Queue client not initialized. Call initializeQueue first.');
@@ -94,6 +109,7 @@ const shutdown = async (): Promise<void> => {
 
 export {
     initializeQueue,
+    publishEvent,
     subscribeUser,
     unsubscribeUser,
     removeQueue,

@@ -1,8 +1,8 @@
-import { BaseEvent, MessageEvent } from '@/models/event';
+import { BaseEvent } from '@/models/event';
 
 interface QueueClient {
     initializeQueue(url: string): Promise<void>;
-    publishMessage(message: MessageEvent): Promise<void>;
+    publishEvent(event: BaseEvent): Promise<void>;
     subscribeUser(userId: string, eventHandler: (event: BaseEvent) => void): Promise<void>;
     unsubscribeUser(userId: string): Promise<void>;
     removeQueue(queueName: string): Promise<void>;

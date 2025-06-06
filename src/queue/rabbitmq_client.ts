@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 import { QueueClient } from '@/queue/queue_client';
-import { BaseEvent, MessageEvent } from '@/models/event';
+import { BaseEvent } from '@/models/event';
 
 class RabbitMQClient implements QueueClient {
     private connection: amqp.ChannelModel | null = null;
@@ -46,14 +46,14 @@ class RabbitMQClient implements QueueClient {
         }
     }
 
-    async publishMessage(message: MessageEvent): Promise<void> {
+    async publishEvent(event: BaseEvent): Promise<void> {
         if (!this.publishingChannel) {
             throw new Error('RabbitMQ publishing channel not initialized. Call initializeQueue first.');
         }
 
         try {
-            const messageBuffer = Buffer.from(JSON.stringify(message));
-            for (const userId of message.userIds) {
+            const messageBuffer = Buffer.from(JSON.stringify(event));
+            for (const userId of event.userIds) {
                 const queueName = `${this.USER_QUEUE_PREFIX}${userId}`;
                 await this.publishingChannel.assertQueue(queueName, { durable: true });
                 await this.publishingChannel.bindQueue(
@@ -70,7 +70,7 @@ class RabbitMQClient implements QueueClient {
                 if (!published) {
 	                console.warn(`Message could not be sent to queue ${queueName} due to buffer overflow.`);
 	            } else {
-	                 console.log(`Message sent to queue ${queueName}:`, message);
+	                 console.log(`Message sent to queue ${queueName}:`, event);
 	            }            
             }
         } catch (error) {
@@ -93,7 +93,7 @@ class RabbitMQClient implements QueueClient {
             const channel = this.userMessageChannels.get(userId)!;
             const queueName = `${this.USER_QUEUE_PREFIX}${userId}`;
             await channel.assertQueue(queueName, { durable: true });
-            const consumerInfo = await channel.consume(queueName, (event) => {
+            await channel.consume(queueName, (event) => {
                 try {
                     const messageContent = JSON.parse(event!.content.toString());
                     eventHandler(messageContent);
