@@ -1,7 +1,7 @@
 import { 
     initializeQueue
 } from '@/api/queue';
-import { subscribeUser } from '@/api/messages';
+import { subscribeUser } from '@/api/queue';
 
 const userId = process.argv[2] || 'default-user-123';
 

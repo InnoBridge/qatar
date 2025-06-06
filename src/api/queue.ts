@@ -1,6 +1,6 @@
 import { QueueClient } from '@/queue/queue_client';
 import { RabbitMQClient } from '@/queue/rabbitmq_client';
-import { Message } from '@/models/message';
+import { BaseEvent } from '@/models/event';
 
 let client: QueueClient | null = null;
 
@@ -17,6 +17,20 @@ const initializeQueue = async (url: string): Promise<QueueClient> => {
         return client;
     } catch (error) {
         console.error('Failed to connect to RabbitMQ:', error);
+        throw error;
+    }
+};
+
+const subscribeUser = async (userId: string, callback: (event: BaseEvent) => void): Promise<void> => {
+    if (!client) {
+        throw new Error('Queue client not initialized. Call initializeQueue first.');
+    }
+
+    try {
+        await client.subscribeUser(userId, callback);
+        console.log(`Subscribed to user queue ${userId} successfully`);
+    } catch (error) {
+        console.error(`Failed to subscribe to user queue ${userId}:`, error);
         throw error;
     }
 };
@@ -80,6 +94,7 @@ const shutdown = async (): Promise<void> => {
 
 export {
     initializeQueue,
+    subscribeUser,
     unsubscribeUser,
     removeQueue,
     removeExchange,
