@@ -36,7 +36,7 @@ const publishEvent = async (event: BaseEvent): Promise<void> => {
 };
 
 
-const subscribeUser = async (userId: string, callback: (event: BaseEvent) => void): Promise<void> => {
+const subscribeUser = async (userId: string, callback: (event: BaseEvent, ack: () => void, nack: () => void) => void): Promise<void> => {
     if (!client) {
         throw new Error('Queue client not initialized. Call initializeQueue first.');
     }

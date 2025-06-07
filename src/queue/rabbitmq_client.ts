@@ -79,7 +79,7 @@ class RabbitMQClient implements QueueClient {
         }
     }
 
-    async subscribeUser(userId: string, eventHandler: (event: BaseEvent) => void): Promise<void> {
+    async subscribeUser(userId: string, eventHandler: (event: BaseEvent, ack: () => void, nack: () => void) => void): Promise<void> {
         if (!this.connection) {
             throw new Error('RabbitMQ connection not initialized. Call initializeQueue first.');
         }
@@ -96,9 +96,21 @@ class RabbitMQClient implements QueueClient {
             await channel.consume(queueName, (event) => {
                 try {
                     const messageContent = JSON.parse(event!.content.toString());
-                    eventHandler(messageContent);
-                    channel.ack(event!);
-                    console.log(`✅ Message acknowledged for ${queueName}`);
+                    console.log(`📬 Message received for ${queueName}:`, JSON.stringify(messageContent, null, 2));
+                
+                    // Pass ACK/NACK functions to the event handler
+                    const ack = () => {
+                        channel.ack(event!);
+                        console.log(`✅ Message acknowledged for ${queueName}`);
+                    };
+                    
+                    const nack = () => {
+                        channel.nack(event!, false, true); // Requeue the message
+                        console.log(`❌ Message negative acknowledged for ${queueName}`);
+                    };
+                    
+                    // Call event handler with ACK/NACK functions
+                    eventHandler(messageContent, ack, nack);
                 } catch (error) {
                     console.error(`❌ Error processing message:`, error);
                     channel.nack(event!, false, false);
@@ -117,6 +129,8 @@ class RabbitMQClient implements QueueClient {
             throw error;
         }
     }
+
+    
 
     async unsubscribeUser(userId: string): Promise<void> {
         const channel = this.userMessageChannels.get(userId);
