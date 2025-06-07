@@ -70,7 +70,7 @@ class RabbitMQClient implements QueueClient {
                 if (!published) {
 	                console.warn(`Message could not be sent to queue ${queueName} due to buffer overflow.`);
 	            } else {
-	                 console.log(`Message sent to queue ${queueName}:`, event);
+	                 console.log(`Message sent to queue ${queueName}:`);
 	            }            
             }
         } catch (error) {
@@ -96,7 +96,7 @@ class RabbitMQClient implements QueueClient {
             await channel.consume(queueName, (event) => {
                 try {
                     const messageContent = JSON.parse(event!.content.toString());
-                    console.log(`📬 Message received for ${queueName}:`, JSON.stringify(messageContent, null, 2));
+                    console.log(`📬 Message received for ${queueName}:`);
                 
                     // Pass ACK/NACK functions to the event handler
                     const ack = () => {
