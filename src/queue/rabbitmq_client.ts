@@ -9,6 +9,7 @@ class RabbitMQClient implements QueueClient {
 
     private readonly DIRECT_EXCHANGE_TYPE = 'direct';
     private readonly MESSAGE_EXCHANGE = 'message';
+    private readonly SCHEDULE_EXCHANGE = 'schedule'; 
     private readonly USER_QUEUE_PREFIX = 'user-';
 
     constructor() {}
@@ -24,6 +25,12 @@ class RabbitMQClient implements QueueClient {
                 this.MESSAGE_EXCHANGE, 
                 this.DIRECT_EXCHANGE_TYPE
                 , { durable: true }
+            );
+
+            await this.publishingChannel.assertExchange(
+                this.SCHEDULE_EXCHANGE,
+                this.DIRECT_EXCHANGE_TYPE,
+                { durable: true }
             );
 
             // Setup error handlers
@@ -75,6 +82,83 @@ class RabbitMQClient implements QueueClient {
             }
         } catch (error) {
             console.error('Failed to publish message:', error);
+            throw error;
+        }
+    }
+
+    async publishScheduleEvent(scheduleEvent: BaseEvent): Promise<void> {
+        if (!this.publishingChannel) {
+            throw new Error('RabbitMQ publishing channel not initialized. Call initializeQueue first.');
+        }
+
+        try {
+            const messageBuffer = Buffer.from(JSON.stringify(scheduleEvent));
+            
+            // Publish to schedule exchange using providerId as routing key
+            for (const providerId of scheduleEvent.userIds) {
+                const published = await this.publishingChannel.publish(
+                    this.SCHEDULE_EXCHANGE,
+                    providerId,  // Use providerId as routing key
+                    messageBuffer,
+                    { persistent: true }
+                );
+                
+                if (!published) {
+                    console.warn(`Schedule event could not be sent to provider ${providerId} due to buffer overflow.`);
+                } else {
+                    console.log(`Schedule event sent to provider ${providerId}`);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to publish schedule event:', error);
+            throw error;
+        }
+    }
+
+    async bindSubscriberToSchedule(providerId: string, subscriberId: string): Promise<void> {
+        if (!this.publishingChannel) {
+            throw new Error('RabbitMQ publishing channel not initialized. Call initializeQueue first.');
+        }
+        
+        const queueName = `${this.USER_QUEUE_PREFIX}${subscriberId}`;
+
+        try {
+
+            // Ensure queue exists
+            await this.publishingChannel.assertQueue(queueName, { durable: true });
+            
+            // Bind queue to schedule exchange with providerId as routing key
+            await this.publishingChannel.bindQueue(
+                queueName,
+                this.SCHEDULE_EXCHANGE,
+                providerId  // Use providerId as routing key
+            );
+            
+            console.log(`Queue ${queueName} bound to schedule exchange for provider ${providerId}`);
+        } catch (error) {
+            console.error(`Failed to bind provider ${providerId} to queue ${queueName}:`, error);
+            throw error;
+        }
+    }
+
+    async unbindSubscriberToSchedule(providerId: string, subscriberId: string): Promise<void> {
+        if (!this.publishingChannel) {
+            throw new Error('RabbitMQ publishing channel not initialized. Call initializeQueue first.');
+        }
+
+        const queueName = `${this.USER_QUEUE_PREFIX}${subscriberId}`;
+
+        try {
+            // Unbind queue from schedule exchange
+            await this.publishingChannel.unbindQueue(
+                queueName,
+                this.SCHEDULE_EXCHANGE,
+                providerId  // Use providerId as routing key
+            );
+            
+            console.log(`Queue ${queueName} unbound from schedule exchange for provider ${providerId}`);
+        } catch (error) {
+            console.error(`Failed to unbind provider ${providerId} from queue ${queueName}:`, error);
             throw error;
         }
     }

@@ -35,6 +35,48 @@ const publishEvent = async (event: BaseEvent): Promise<void> => {
     }
 };
 
+const publishScheduleEvent = async (scheduleEvent: BaseEvent): Promise<void> => {
+    if (!client) {
+        throw new Error('Queue client not initialized. Call initializeQueue first.');
+    }
+
+    try {
+        await client.publishScheduleEvent(scheduleEvent);
+        console.log('Schedule event published successfully');
+    } catch (error) {
+        console.error('Failed to publish schedule event:', error);
+        throw error;
+    }
+};
+
+const bindSubscriberToSchedule = async (providerId: string, subscriberId: string): Promise<void> => {
+    if (!client) {
+        throw new Error('Queue client not initialized. Call initializeQueue first.');
+    }
+
+    try {
+        await client.bindSubscriberToSchedule(providerId, subscriberId);
+        console.log(`Subscriber ${subscriberId} bound to schedule ${providerId} successfully`);
+    } catch (error) {
+        console.error(`Failed to bind subscriber ${subscriberId} to schedule ${providerId}:`, error);
+        throw error;
+    }
+};
+
+const unbindSubscriberToSchedule = async (providerId: string, subscriberId: string): Promise<void> => {
+    if (!client) {
+        throw new Error('Queue client not initialized. Call initializeQueue first.');
+    }
+
+    try {
+        await client.unbindSubscriberToSchedule(providerId, subscriberId);
+        console.log(`Subscriber ${subscriberId} unbound from schedule ${providerId} successfully`);
+    } catch (error) {
+        console.error(`Failed to unbind subscriber ${subscriberId} from schedule ${providerId}:`, error);
+        throw error;
+    }
+};
+
 
 const subscribeUser = async (userId: string, callback: (event: BaseEvent, ack: () => void, nack: () => void) => void): Promise<void> => {
     if (!client) {
@@ -110,6 +152,9 @@ const shutdown = async (): Promise<void> => {
 export {
     initializeQueue,
     publishEvent,
+    publishScheduleEvent,
+    bindSubscriberToSchedule,
+    unbindSubscriberToSchedule,
     subscribeUser,
     unsubscribeUser,
     removeQueue,
