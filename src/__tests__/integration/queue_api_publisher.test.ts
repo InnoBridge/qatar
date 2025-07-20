@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 import { 
     initializeQueue,
+    publishScheduleEvent,
     shutdown
 } from '@/api/queue';
 import { publishEvent } from '@/api/queue';
@@ -22,7 +23,12 @@ interface MessageEvent extends BaseEvent {
     type: 'message';
     userIds: string[];
     message: Message;
-}
+};
+
+interface ScheduleEvent extends BaseEvent {
+    type: 'schedule';
+    userIds: string[];
+};
 
 const initializeQueueTest = async (url: string) => {
     console.log(`Initializing RabbitMQ client with URL: ${url}`);
@@ -92,6 +98,23 @@ const publishMessageTest = async () => {
     }
 };
 
+const publishScheduleTest = async () => {
+    console.log('Starting publishScheduleTest...');
+
+    const scheduleEvent: ScheduleEvent = {
+        type: 'schedule',
+        userIds: ['123'],
+    };
+
+    try {
+        await publishScheduleEvent(scheduleEvent);
+        console.log('Schedule event published successfully');
+    } catch (error) {
+        console.error('Failed to publish schedule event:', error);
+        throw error;
+    }
+};
+
 const shutdownTest = async () => {
     console.log('Starting shutdownTest...');
     try {
@@ -111,7 +134,9 @@ const shutdownTest = async () => {
         await initializeQueueTest(RABBITMQ_URL!);
 
         // Publish a message
-        await publishMessageTest();
+        // await publishMessageTest();
+        await publishScheduleTest();
+
 
         // Shutdown the RabbitMQ client
         await shutdownTest();

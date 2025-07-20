@@ -1,5 +1,7 @@
 import { 
-    initializeQueue
+    bindSubscriberToSchedule,
+    initializeQueue,
+    unbindSubscriberToSchedule
 } from '@/api/queue';
 import { subscribeUser } from '@/api/queue';
 
@@ -21,12 +23,41 @@ const initializeQueueTest = async (url: string) => {
 const subscribeToUserQueue = async (userId: string): Promise<void> => {
     console.log(`Subscribing to user queue for userId: ${userId}`);
     try {
-        await subscribeUser(userId, (message) => {
+        await subscribeUser(userId, (message, ack, nack) => {
             console.log(`Received message for user ${userId}:`, JSON.stringify(message, null, 2));
+            try {
+                ack();
+            } catch (error) {
+                console.error(`Error processing message:`, error);
+                nack();
+            }
         });
         console.log(`Subscribed to user queue ${userId} successfully`);
     } catch (error) {
         console.error(`Failed to subscribe to user queue ${userId}:`, error);
+        throw error;
+    }
+};
+
+const subscribeToUserQueueWithScheduleBinding = async (
+    providerId: string,
+    subscriberId: string
+): Promise<void> => {
+    console.log(`Subscribing to user queue for providerId: ${providerId}, subscriberId: ${subscriberId}`);
+    try {
+        await bindSubscriberToSchedule(providerId, subscriberId);
+        await subscribeUser(subscriberId, (message, ack, nack) => {
+            console.log(`Received schedule message for provider ${providerId} and subscriber ${subscriberId}:`, JSON.stringify(message, null, 2));
+            try {
+                ack();
+            } catch (error) {
+                console.error(`Error processing schedule message:`, error);
+                nack();
+            }
+        });
+        console.log(`Subscribed to user queue ${subscriberId} successfully`);
+    } catch (error) {
+        console.error(`Failed to subscribe to user queue ${subscriberId}:`, error);
         throw error;
     }
 };
@@ -36,7 +67,9 @@ const subscribeToUserQueue = async (userId: string): Promise<void> => {
         // Initialize RabbitMQ client
         await initializeQueueTest(RABBITMQ_URL!);
 
-        await subscribeToUserQueue(userId);
+        // await subscribeToUserQueue(userId);
+        // await subscribeToUserQueueWithScheduleBinding('123', userId);
+        await unbindSubscriberToSchedule('123', userId);
         console.log("🎉 RabbitMQ Subscriber integration test passed");
     } catch (err) {
         console.error("❌ RabbitMQ Subscriber integration test failed:", err);

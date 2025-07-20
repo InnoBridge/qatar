@@ -20,7 +20,13 @@ interface Message {
 interface MessageEvent extends BaseEvent {
     type: 'message';
     message: Message;
-}
+};
+
+interface ScheduleEvent extends BaseEvent {
+    type: 'schedule';
+    userIds: string[];
+};
+
 
 const initializationClient = async (url: string): Promise<QueueClient> => {
     const client = new RabbitMQClient();
@@ -62,6 +68,25 @@ const publishMessageTest = async (client: QueueClient): Promise<void> => {
     }
 };
 
+const publishScheduleTest = async (client: QueueClient): Promise<void> => {
+    console.log('Starting publishScheduleTest...');
+
+    const scheduleEvent: ScheduleEvent = 
+        {
+            type: 'schedule',
+            userIds: ['123'],
+        };
+
+    try {
+        await client.publishScheduleEvent(scheduleEvent);
+        console.log('Schedule event published successfully');
+    } catch (error) {
+        console.error('Failed to publish schedule event:', error);
+        throw error;
+    }
+};
+
+
 const removeQueueTest = async (client: QueueClient, queueName: string): Promise<void> => {
     console.log(`Starting removeQueueTest`);
     try {
@@ -88,8 +113,8 @@ const shutdownTest = async (client: QueueClient): Promise<void> => {
     try {
         const client = await initializationClient(RABBITMQ_URL!);
         
-        await publishMessageTest(client);
-        
+        // await publishMessageTest(client);
+        await publishScheduleTest(client)
         // await removeQueueTest(client, 'user-user-123');
         // await removeQueueTest(client, 'user-user-456');
 
